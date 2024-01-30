@@ -7,9 +7,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="..\CellularAutomata\OneDimAutomata.cs" Link="OneDimAutomata.cs" />
-    <Compile Include="..\CellularAutomata\TwoDimAutomata.cs" Link="TwoDimAutomata.cs" />
-  </ItemGroup>
-
 </Project>

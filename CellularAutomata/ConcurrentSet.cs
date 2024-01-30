@@ -27,7 +27,7 @@ namespace CellularAutomata
 
         bool ICollection<T>.IsReadOnly => false;
 
-        bool ISet<T>.Add(T item)
+        public bool Add(T item)
         {
             int rnd = Random.Shared.Next();
 

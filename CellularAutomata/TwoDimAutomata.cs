@@ -87,7 +87,7 @@ namespace CellularAutomata
             }
             else
             {
-                ISet<(int, int)> affectedSet = new ConcurrentSet<(int, int)>(_Data);
+                ConcurrentSet<(int, int)> affectedSet = new(_Data);
                 Parallel.ForEach(_Data, new() { MaxDegreeOfParallelism = Environment.ProcessorCount },
                     index =>
                     {
@@ -180,7 +180,6 @@ namespace CellularAutomata
             return _RuleNumber[number];
         }
 
-        public (int x, int y)[] Data => _Data.ToArray();
         public BitArray RuleNumber => new(_RuleNumber);
         public bool this[int x, int y]
         {

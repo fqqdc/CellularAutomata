@@ -1,5 +1,6 @@
 ﻿using System.Data.Common;
 using System.Diagnostics;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
@@ -18,12 +19,12 @@ using System.Windows.Threading;
 namespace CellularAutomata
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for DKCAWindow.xaml
     /// </summary>
-    public partial class TDAWindow : Window
+    public partial class DKCAWindow : Window
     {
 
-        TwoDimAutomata _Automata;
+        readonly DoubleKernelCellularAutomata _Automata;
         int _Width, _Height;
         int _RawStride;
         readonly int _BytePerPixel;
@@ -35,7 +36,7 @@ namespace CellularAutomata
 
         bool _Iterating = false;
 
-        public TDAWindow()
+        public DKCAWindow()
         {
             InitializeComponent();
 
@@ -54,16 +55,30 @@ namespace CellularAutomata
             _WriteableBitmap = new(_Width, _Height, _DpiScale.PixelsPerInchX, _DpiScale.PixelsPerInchY, _PixelFormat, null);
             _Image.Source = _WriteableBitmap;
 
-            _Automata = new([3], [2, 3], (0, 0, _Width, _Height));
+            _Automata = new(1, new(0, 0.5f), new(0.5f, 1), 12, new(0.27f, 0.36f), new(0.26f, 0.46f))
+            {
+                Bounding = new(0, 0, 200, 200)
+            };
         }
 
+        const int brushThinkness = 3;
         private void Image_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (_Iterating) return;
 
             var p = e.GetPosition(_Image);
-            _Automata[(int)p.X, (int)p.Y] = true;
-            SetImage((int)p.X, (int)p.Y, 1.0f);
+            p = p with { X = p.X - brushThinkness * 0.5, Y = p.Y - brushThinkness * 0.5 };
+
+            for (var x = p.X; x < p.X + brushThinkness; x++)
+            {
+                for (var y = p.Y; y < p.Y + brushThinkness; y++)
+                {
+                    _Automata[(int)x, (int)y] = true;
+                    SetImage((int)x, (int)y, 1.0f);
+                }
+            }
+
+
         }
 
         private void Image_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -71,8 +86,16 @@ namespace CellularAutomata
             if (_Iterating) return;
 
             var p = e.GetPosition(_Image);
-            _Automata[(int)p.X, (int)p.Y] = false;
-            SetImage((int)p.X, (int)p.Y, 0.0f);
+            p = p with { X = p.X - brushThinkness * 0.5, Y = p.Y - brushThinkness * 0.5 };
+
+            for (var x = p.X; x < p.X + brushThinkness; x++)
+            {
+                for (var y = p.Y; y < p.Y + brushThinkness; y++)
+                {
+                    _Automata[(int)x, (int)y] = false;
+                    SetImage((int)x, (int)y, 0.0f);
+                }
+            }
         }
 
         private void Image_MouseMove(object sender, MouseEventArgs e)
@@ -80,16 +103,25 @@ namespace CellularAutomata
             if (_Iterating) return;
 
             var p = e.GetPosition(_Image);
-            if (e.LeftButton == MouseButtonState.Pressed)
+            p = p with { X = p.X - brushThinkness * 0.5, Y = p.Y - brushThinkness * 0.5 };
+
+            for (var x = p.X; x < p.X + brushThinkness; x++)
             {
-                _Automata[(int)p.X, (int)p.Y] = true;
-                SetImage((int)p.X, (int)p.Y, 1.0f);
+                for (var y = p.Y; y < p.Y + brushThinkness; y++)
+                {
+                    if (e.LeftButton == MouseButtonState.Pressed)
+                    {
+                        _Automata[(int)x, (int)y] = true;
+                        SetImage((int)x, (int)y, 1.0f);
+                    }
+                    else if (e.RightButton == MouseButtonState.Pressed)
+                    {
+                        _Automata[(int)x, (int)y] = false;
+                        SetImage((int)x, (int)y, 0.0f);
+                    }
+                }
             }
-            else if (e.RightButton == MouseButtonState.Pressed)
-            {
-                _Automata[(int)p.X, (int)p.Y] = false;
-                SetImage((int)p.X, (int)p.Y, 0.0f);
-            }
+
         }
 
         private void SetImage(int x, int y, float red)
@@ -157,7 +189,7 @@ namespace CellularAutomata
                 Dispatcher.Invoke(() =>
                 {
                     _TickCount++;
-                    Title = $"二维元胞自动机 {_TickCount}Ticks";
+                    Title = $"双核元胞自动机 {_TickCount}Ticks";
                     RefreshImage();
                 });
             });
@@ -168,7 +200,7 @@ namespace CellularAutomata
             if (_Iterating)
                 _Iterating = false;
             IterateTimer?.Stop();
-            Title = $"二维元胞自动机";
+            Title = $"双核元胞自动机";
             UpdateUIByStopIteration();
         }
 
@@ -242,12 +274,12 @@ namespace CellularAutomata
                 TextBoxAutomataSurviveCondition.Text = string.Join(",", intsSurviveCondition.Order());
             }
 
-            var newAutomata = new TwoDimAutomata(intsBirthCondition, intsSurviveCondition, (0, 0, _Width, _Height));
-            foreach(var (x, y) in _Automata)
-            {
-                newAutomata[x, y] = true;
-            }
-            _Automata = newAutomata;
+            //var newAutomata = new TwoDimAutomata(intsBirthCondition, intsSurviveCondition, (0, 0, _Width, _Height));
+            //foreach(var (x, y) in _Automata)
+            //{
+            //    newAutomata[x, y] = true;
+            //}
+            //_Automata = newAutomata;
 
             RefreshImage();
 
@@ -291,7 +323,8 @@ namespace CellularAutomata
             {
                 _WriteableBitmap = new(_Width, _Height, _DpiScale.PixelsPerInchX, _DpiScale.PixelsPerInchY, _PixelFormat, null);
                 _Image.Source = _WriteableBitmap;
-                _Automata = new(_Automata.RuleNumber, (0, 0, _Width, _Height));
+                _Automata.Clear();
+                _Automata.Bounding = new(0, 0, _Width, _Height);
 
                 RefreshImage();
             }
@@ -315,8 +348,9 @@ namespace CellularAutomata
 
             Parallel.ForEach(_Automata, index =>
             {
-                var (x, y) = index;
+                var (x, y) = ((int)index.X, (int)index.Y);
                 if (x < 0 || x >= _Width) return;
+                if (y < 0 || y >= _Height) return;
                 var offset = x + _Width * y;
                 ref var color = ref MemoryMarshal.AsRef<Color>(_RawImage.AsSpan(_BytePerPixel * offset));
                 color.r = 1f;
@@ -324,10 +358,10 @@ namespace CellularAutomata
 
             _WriteableBitmap.WritePixels(new(0, 0, _Width, _Height), _RawImage, stride: _RawStride, 0);
         }
-    }
 
-    internal struct Color
-    {
-        public float r, g, b, a;
+        struct Color
+        {
+            public float r, g, b, a;
+        }
     }
 }
