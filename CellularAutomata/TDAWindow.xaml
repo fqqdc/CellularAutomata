@@ -1,0 +1,83 @@
+﻿<Window x:Class="CellularAutomata.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CellularAutomata"
+        mc:Ignorable="d"
+        Title="二维元胞自动机" Height="450" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Margin="5">
+            <Button x:Name="ButtonRandomGenerated" Width="75" Padding="5" Margin="5"
+                    Content="随机生成" Click="ButtonRandomGenerated_Click"  />
+
+            <Button x:Name="ButtonClear" Width="75" Padding="5" Margin="5"
+                    Content="清空区域" Click="ButtonClear_Click"  />
+
+            <Button x:Name="ButtonSingleStep" Width="75" Padding="5" Margin="5"
+                    Content="单步步进" Click="ButtonSingleStep_Click"  />
+
+            <Button x:Name="ButtonContinuousIteration" Width="75" Padding="5" Margin="5"
+                    Content="持续迭代" Click="ButtonContinuousIteration_Click"  />
+
+            <Button x:Name="ButtonStopIteration" Width="75" Padding="5" Margin="5" IsEnabled="False"
+                    Content="停止迭代" Click="ButtonStopIteration_Click"  />
+
+            <GroupBox Margin="5" Padding="5">
+                <GroupBox.Header>
+                    <TextBlock Text="参数 B3 S23" FontSize="8" x:Name="TextBlockFactor" />
+                </GroupBox.Header>
+                <StackPanel>
+                    <TextBlock FontSize="8" Margin="0 2 0 0">
+                        <Run Text="新生条件[1-8]:" />
+                        <Run Text="❓" Foreground="Red" ToolTip="空格下个回合生成方块的条件，由相邻的方块数量决定"/>
+                    </TextBlock>
+                    <TextBox x:Name="TextBoxAutomataBirthCondition" Width="75"
+                             Text="3" ToolTip="空格下个回合生成方块的条件，由相邻的方块数量决定" />
+
+                    <TextBlock FontSize="8" Margin="0 2 0 0" ToolTip="方块下个回合继续存在的条件，由相邻的方块数量决定">
+                        <Run Text="存活条件[0-8]:" />
+                        <Run Text="❓" Foreground="Red"/>
+                    </TextBlock>
+                    <TextBox x:Name="TextBoxAutomataSurviveCondition" Width="75"
+                             Text="2,3" ToolTip="方块下个回合继续存在的条件，由相邻的方块数量决定" />
+
+                    <Button x:Name="ButtonResetAutomata" Margin="5"
+                            Content="重设自动机" FontSize="8" Click="ButtonResetAutomata_Click"/>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Margin="5" Padding="5">
+                <GroupBox.Header>
+                    <TextBlock Text="区域 200x200" FontSize="8"  x:Name="TextBlockSpace" />
+                </GroupBox.Header>
+                <StackPanel>
+                    <TextBlock Text="宽度:" FontSize="8" Margin="0 2 0 0" />
+                    <TextBox x:Name="TextBoxSpaceWidth" Width="75"
+                             Text="200" />
+
+                    <TextBlock Text="高度:" FontSize="8" Margin="0 2 0 0" />
+                    <TextBox x:Name="TextBoxSpaceHeight" Width="75"
+                             Text="200" />
+
+                    <Button x:Name="ButtonResetSpace" Margin="5"
+                            Content="重设范围" FontSize="8" Click="ButtonResetSpace_Click"/>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+
+        <Grid Grid.Column="1" x:Name="GridImage" Margin="0,5,5,5">
+            <Viewbox Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" >
+                <Image x:Name="_Image" Stretch="None"
+                       MouseLeftButtonDown="Image_MouseLeftButtonDown"
+                       MouseRightButtonDown="Image_MouseRightButtonDown"
+                       MouseMove="Image_MouseMove" />
+            </Viewbox>
+        </Grid>
+    </Grid>
+</Window>
