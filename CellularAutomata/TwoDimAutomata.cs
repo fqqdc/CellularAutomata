@@ -87,25 +87,24 @@ namespace CellularAutomata
             }
             else
             {
-                var affectedBag = new ConcurrentBag<(int, int)>(_Data);
+                ISet<(int, int)> affectedSet = new ConcurrentSet<(int, int)>(_Data);
                 Parallel.ForEach(_Data, new() { MaxDegreeOfParallelism = Environment.ProcessorCount },
                     index =>
                     {
                         var (x, y) = index;
 
-                        affectedBag.Add((x - 1, y - 1));
-                        affectedBag.Add((x, y - 1));
-                        affectedBag.Add((x + 1, y - 1));
+                        affectedSet.Add((x - 1, y - 1));
+                        affectedSet.Add((x, y - 1));
+                        affectedSet.Add((x + 1, y - 1));
 
-                        affectedBag.Add((x - 1, y));
-                        //affectedBag.Add((x, y));
-                        affectedBag.Add((x + 1, y));
+                        affectedSet.Add((x - 1, y));
+                        //affectedSet.Add((x, y));
+                        affectedSet.Add((x + 1, y));
 
-                        affectedBag.Add((x - 1, y + 1));
-                        affectedBag.Add((x, y + 1));
-                        affectedBag.Add((x + 1, y + 1));
+                        affectedSet.Add((x - 1, y + 1));
+                        affectedSet.Add((x, y + 1));
+                        affectedSet.Add((x + 1, y + 1));
                     });
-                var affectedSet = affectedBag.ToHashSet();
 
                 Parallel.ForEach(affectedSet, new() { MaxDegreeOfParallelism = Environment.ProcessorCount },
                     index =>
