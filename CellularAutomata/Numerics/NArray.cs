@@ -1,7 +1,5 @@
-﻿using System;
+﻿using System.Buffers;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -46,9 +44,11 @@ namespace Numerics
                     throw new ArgumentException($"The length of {nameof(indexes)} is less than {nameof(RankCount)}.");
 
                 int index = indexes[0];
+                int rankSize = 1;
                 for (int i = 1; i < indexes.Length; i++)
                 {
-                    index += _rankLengths[i - 1] * indexes[i];
+                    rankSize *= _rankLengths[i - 1];
+                    index += rankSize * indexes[i];
                 }
                 return ref _array[index];
             }
@@ -63,11 +63,13 @@ namespace Numerics
                 return defalutValue;
 
             int index = indexes[0];
+            int rankSize = 1;
             for (int i = 1; i < indexes.Length; i++)
             {
                 if (indexes[i] < 0 || indexes[i] >= _rankLengths[i])
                     return defalutValue;
-                index += _rankLengths[i - 1] * indexes[i];
+                rankSize *= _rankLengths[i - 1];
+                index += rankSize * indexes[i];
             }
 
 
@@ -108,31 +110,6 @@ namespace Numerics
         #endregion
 
         public Span<T>.Enumerator GetEnumerator() => _array.AsSpan().GetEnumerator();
-
-        public Span<T> AsSpan()
-        {
-            return new Span<T>(_array);
-        }
-
-        public override bool Equals(object? obj)
-        {
-            if (obj is not NArray<T> that) return false;
-            if (ReferenceEquals(this, obj)) return true;
-
-            if (_array.Length != that._array.Length)
-                return false;
-            return _array.SequenceEqual(that._array);
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = 0;
-            foreach (var i in _array)
-            {
-                hashCode = HashCode.Combine(hashCode, i);
-            }
-            return hashCode;
-        }
     }
 
     public static class NArray
@@ -165,7 +142,7 @@ namespace Numerics
                 }
 
                 var (sum, sumWeight) = ConvolutionIndexes(indexesInput, input, kernel, indexesKernelOffset);
-                result[indexesInput] = sum / sumWeight;
+                result[i] = sum / sumWeight;
             }
 
             return result;
@@ -201,8 +178,7 @@ namespace Numerics
 
                 var (sum, sumWeight) = ConvolutionIndexes(indexesInput, input, kernel, indexesKernelOffset);
                 result[i] = sum / sumWeight;
-            }
-            );
+            });
 
             return result;
         }
@@ -232,13 +208,16 @@ namespace Numerics
                     index %= sizes[iSize];
                 }
 
-                var indexesInputCalc =
+                var indexesInputOffset =
                     indexesInput
                     .Select((number, index) => number + indexeskernel[index] + indexesKernelOffset[index])
                     .ToArray();
 
-                sum += input.GetValueOrDefault(T.Zero, indexesInputCalc)! * kernel[indexeskernel];
+                var value = input.GetValueOrDefault(T.Zero, indexesInputOffset)! * kernel[indexeskernel];
+                sum += value;
                 sumWeight += kernel[indexeskernel];
+
+                //Debug.WriteLine($"{i}:({indexesInputOffset[0]},{indexesInputOffset[1]},{indexesInputOffset[2]}):{value}");
             }
 
             return (sum, sumWeight);
@@ -257,6 +236,32 @@ namespace Numerics
                 {
                     stringBuilder.Append(array[x, y].ToString(format))
                         .Append('\t');
+                }
+                stringBuilder.AppendLine();
+            }
+
+            return stringBuilder.ToString();
+        }
+
+        public static string Get3DString(this NArray<float> array, string format)
+        {
+            if (array.RankCount != 3) throw new NotSupportedException();
+            var rankLengths = array.RankLengths;
+
+            StringBuilder stringBuilder = new();
+
+            for (int y = 0; y < rankLengths[1]; y++)
+            {
+                for (int z = 0; z < rankLengths[2]; z++)
+                {
+                    for (int x = 0; x < rankLengths[0]; x++)
+                    {
+                        stringBuilder.Append(" ")
+                            .Append(array[x, y, z].ToString(format).PadLeft(5))
+                            .Append(" ");
+                    }
+
+                    stringBuilder.Append(" | ");
                 }
                 stringBuilder.AppendLine();
             }
