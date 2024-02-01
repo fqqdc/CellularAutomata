@@ -1,8 +1,11 @@
-﻿using System.Buffers;
+﻿using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Numerics
 {
@@ -114,14 +117,17 @@ namespace Numerics
 
     public static class NArray
     {
-        public static NArray<T> Convolution<T>(NArray<T> input, NArray<T> kernel, int[] indexesKernelOffset)
+        public static void Convolution<T>(NArray<T> input, NArray<T> kernel, int[] indexesKernelOffset, ref NArray<T> result)
             where T : INumber<T>
         {
             if (input.RankCount != kernel.RankCount || input.RankCount != indexesKernelOffset.Length)
                 throw new NotSupportedException();
 
             var inputRankLengths = input.RankLengths;
-            var result = new NArray<T>(inputRankLengths);
+            if (!result.RankLengths.SequenceEqual(inputRankLengths))
+            {
+                throw new ArgumentException($"The {nameof(result.RankLengths)} of {nameof(result)} is not equal to {nameof(input)}.");
+            }
 
             int[] sizes = new int[input.RankCount];
             sizes[0] = 1;
@@ -144,19 +150,28 @@ namespace Numerics
                 var (sum, sumWeight) = ConvolutionIndexes(indexesInput, input, kernel, indexesKernelOffset);
                 result[i] = sum / sumWeight;
             }
+        }
+        public static NArray<T> Convolution<T>(NArray<T> input, NArray<T> kernel, int[] indexesKernelOffset)
+            where T : INumber<T>
+        {
+            var result = new NArray<T>(input.RankLengths);
+            Convolution(input, kernel, indexesKernelOffset, ref result);
 
             return result;
         }
 
         public static ParallelOptions DefalutParallelOptions { get; set; } = new() { MaxDegreeOfParallelism = Environment.ProcessorCount };
-        public static NArray<T> ConvolutionParallel<T>(NArray<T> input, NArray<T> kernel, int[] indexesKernelOffset)
-            where T : INumber<T>
+        public static void ConvolutionParallel<T>(NArray<T> input, NArray<T> kernel, int[] indexesKernelOffset, ref NArray<T> result)
+        where T : INumber<T>
         {
             if (input.RankCount != kernel.RankCount || input.RankCount != indexesKernelOffset.Length)
                 throw new NotSupportedException();
 
             var inputRankLengths = input.RankLengths;
-            var result = new NArray<T>(inputRankLengths);
+            if (!result.RankLengths.SequenceEqual(inputRankLengths))
+            {
+                throw new ArgumentException($"The {nameof(result.RankLengths)} of {nameof(result)} is not equal to {nameof(input)}.");
+            }
 
             int[] sizes = new int[input.RankCount];
             sizes[0] = 1;
@@ -165,6 +180,7 @@ namespace Numerics
                 sizes[i] = sizes[i - 1] * inputRankLengths[i - 1];
             }
 
+            var refResult = result;
             Parallel.For(0, input.Length, DefalutParallelOptions, i =>
             {
                 int[] indexesInput = new int[input.RankCount];
@@ -177,9 +193,15 @@ namespace Numerics
                 }
 
                 var (sum, sumWeight) = ConvolutionIndexes(indexesInput, input, kernel, indexesKernelOffset);
-                result[i] = sum / sumWeight;
+                refResult[i] = sum / sumWeight;
             });
-
+        }
+        public static NArray<T> ConvolutionParallel<T>(NArray<T> input, NArray<T> kernel, int[] indexesKernelOffset)
+            where T : INumber<T>
+        {
+            var inputRankLengths = input.RankLengths;
+            var result = new NArray<T>(inputRankLengths);
+            ConvolutionParallel(input, kernel, indexesKernelOffset, ref result);
             return result;
         }
 
@@ -243,7 +265,7 @@ namespace Numerics
             return stringBuilder.ToString();
         }
 
-        public static string Get3DString(this NArray<float> array, string format)
+        public static string Get3DString(this NArray<float> array, in string format, in int unitStringLength = 5)
         {
             if (array.RankCount != 3) throw new NotSupportedException();
             var rankLengths = array.RankLengths;
@@ -256,9 +278,9 @@ namespace Numerics
                 {
                     for (int x = 0; x < rankLengths[0]; x++)
                     {
-                        stringBuilder.Append(" ")
-                            .Append(array[x, y, z].ToString(format).PadLeft(5))
-                            .Append(" ");
+                        stringBuilder.Append(' ')
+                            .Append(array[x, y, z].ToString(format).PadLeft(unitStringLength))
+                            .Append(' ');
                     }
 
                     stringBuilder.Append(" | ");
